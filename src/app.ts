@@ -16,6 +16,7 @@ const port = process.env.PORT || 3000;
 //routers
 import router from "./routes/authRoutes";
 import userRouter from "./routes/userRoutes";
+import movieRouter from "./routes/moviesRoutes";
 import errorHandlerMiddleWare from "./middlewares/error-handler";
 
 //initialize passport
@@ -38,6 +39,7 @@ app.use(express.json());
 // routes
 app.use("/api/v1/auth", router);
 app.use("/api/v1/users", userRouter);
+app.use("/api/v1/movies", movieRouter);
 
 //error handling
 app.use(errorHandlerMiddleWare as any);

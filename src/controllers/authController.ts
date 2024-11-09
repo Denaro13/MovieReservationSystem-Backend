@@ -13,10 +13,12 @@ export const register = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { name, email, password } = req.body;
+  const { name, email, password, role } = req.body;
 
-  if (!name || !email || !password) {
-    return next(new BadRequestError("Please include name, email and password"));
+  if (!name || !email || !password || !role) {
+    return next(
+      new BadRequestError("Please include name, email, password and role")
+    );
   }
 
   const userWithEmail = await db.user.findUnique({
@@ -36,7 +38,7 @@ export const register = async (
     data: {
       name,
       email,
-      role: "USER",
+      role,
       password: hashedPassword,
     },
   });

@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import UnAuthenticatedError from "../errors/unauthenticated";
 import jwt, { JwtPayload } from "jsonwebtoken";
+import UnAuthorizedError from "../errors/unauthorized";
 
 type Payload = {
   userId: string;
@@ -37,4 +38,13 @@ export const authenticateUser = async (
   } catch (error) {
     next(new UnAuthenticatedError("Authentication invalid"));
   }
+};
+
+export const authorizePermissions = (role: "ADMIN" | "USER") => {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (role !== res.locals.user.role) {
+      return next(new UnAuthorizedError("Unauthorized to access this route"));
+    }
+    next();
+  };
 };

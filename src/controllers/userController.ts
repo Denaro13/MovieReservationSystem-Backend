@@ -24,8 +24,10 @@ export const getAllUser = async (
       email: true,
       role: true,
       createdAt: true,
+      reservations: true,
     },
   });
+
   const count = await db.user.count({});
 
   res.status(StatusCodes.OK).json({ users, count });
