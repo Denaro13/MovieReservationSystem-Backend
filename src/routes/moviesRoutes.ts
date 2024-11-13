@@ -4,22 +4,35 @@ import {
   authorizePermissions,
 } from "../middlewares/authentication";
 import {
+  addShowTimeToMovie,
   createMovie,
   getMovies,
   getMoviesByGenre,
   getMoviesById,
+  getMovieShowTimes,
+  seatReservationForMovieShowtime,
 } from "../controllers/movieController";
 
 const movieRouter = Router();
 
 movieRouter.get("/", authenticateUser, getMovies);
 movieRouter.get("/:movieId", authenticateUser, getMoviesById);
-// movieRouter.get(`/?genre=`, authenticateUser, getMoviesByGenre);
 movieRouter.post(
   "/",
   authenticateUser,
   authorizePermissions("ADMIN"),
   createMovie
 );
-
+movieRouter.post(
+  "/:movieId/showTime",
+  authenticateUser,
+  authorizePermissions("ADMIN"),
+  addShowTimeToMovie
+);
+movieRouter.get("/:movieId/showTimes", authenticateUser, getMovieShowTimes);
+movieRouter.post(
+  "/showTimes/:showTimeId/reservations",
+  authenticateUser,
+  seatReservationForMovieShowtime
+);
 export default movieRouter;

@@ -1,5 +1,8 @@
 import { Router } from "express";
-import { authenticateUser } from "../middlewares/authentication";
+import {
+  authenticateUser,
+  authorizePermissions,
+} from "../middlewares/authentication";
 import {
   deleteUser,
   getAllUser,
@@ -11,11 +14,21 @@ import {
 
 const userRouter = Router();
 
-userRouter.get("/", authenticateUser, getAllUser);
+userRouter.get(
+  "/",
+  authenticateUser,
+  authorizePermissions("ADMIN"),
+  getAllUser
+);
 userRouter.get("/showCurrentUser", authenticateUser, showCurrentUser);
+userRouter.patch("/updatePassword", authenticateUser, updatePassword);
+userRouter.patch("/:id", authenticateUser, updateUser);
 userRouter.get("/:id", authenticateUser, getSingleUser);
-userRouter.post("/:id", authenticateUser, updateUser);
-userRouter.delete("/:id", authenticateUser, deleteUser);
-userRouter.put("/updatePassword", authenticateUser, updatePassword);
+userRouter.delete(
+  "/:id",
+  authenticateUser,
+  authorizePermissions("ADMIN"),
+  deleteUser
+);
 
 export default userRouter;

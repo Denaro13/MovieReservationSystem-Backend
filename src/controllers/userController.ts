@@ -14,9 +14,6 @@ export const getAllUser = async (
 ) => {
   const user = res.locals.user;
 
-  if (user.role !== "ADMIN") {
-    return next(new UnAuthorizedError("UnAuthorized to access this route"));
-  }
   const users = await db.user.findMany({
     select: {
       id: true,
@@ -25,6 +22,7 @@ export const getAllUser = async (
       role: true,
       createdAt: true,
       reservations: true,
+      _count: true,
     },
   });
 
@@ -50,6 +48,8 @@ export const getSingleUser = async (
       email: true,
       role: true,
       createdAt: true,
+      reservations: true,
+      _count: true,
     },
   });
 
@@ -75,7 +75,22 @@ export const showCurrentUser = async (
       .json({ msg: "There is no logged in user" });
   }
 
-  res.status(StatusCodes.OK).json({ user });
+  const userData = await db.user.findUnique({
+    where: {
+      id: parseInt(user.id),
+    },
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      role: true,
+      createdAt: true,
+      reservations: true,
+      _count: true,
+    },
+  });
+
+  res.status(StatusCodes.OK).json({ userData });
 };
 
 export const updateUser = async (
@@ -85,8 +100,19 @@ export const updateUser = async (
 ) => {
   const { id } = req.params;
   const { name, email } = req.body;
+
   if (!name || !email) {
     return next(new BadRequestError("Please provide name and email"));
+  }
+
+  const userAvailable = await db.user.findUnique({
+    where: {
+      id: parseInt(id),
+    },
+  });
+
+  if (!userAvailable) {
+    return next(new BadRequestError(`There is no user with id:${id}`));
   }
 
   const emailInUse = await db.user.findUnique({
@@ -94,8 +120,11 @@ export const updateUser = async (
       email,
     },
   });
-  if (emailInUse) {
-    return next(new BadRequestError("Email already in use"));
+
+  console.log(emailInUse);
+
+  if (emailInUse?.id !== parseInt(id)) {
+    return next(new BadRequestError("Email already in use by another user"));
   }
 
   const user = await db.user.update({
@@ -111,15 +140,10 @@ export const updateUser = async (
       name: true,
       email: true,
       role: true,
+      reservations: true,
       createdAt: true,
     },
   });
-
-  if (!user) {
-    res
-      .status(StatusCodes.NOT_FOUND)
-      .json({ msg: `There is no user with id: ${id}` });
-  }
 
   res
     .status(StatusCodes.ACCEPTED)
@@ -131,22 +155,23 @@ export const deleteUser = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-  if (res.locals.user.role !== "ADMIN") {
-    return next(new UnAuthorizedError("Unauthorized to access this route"));
+    const user = await db.user.delete({
+      where: {
+        id: parseInt(id),
+      },
+    });
+    if (!user) {
+      res
+        .status(StatusCodes.NOT_FOUND)
+        .json({ msg: `There is no user with id: ${id}` });
+    }
+    res.status(StatusCodes.OK).json({ msg: "User deleted successfully" });
+  } catch (error) {
+    next(error);
   }
-  const user = await db.user.delete({
-    where: {
-      id: parseInt(id),
-    },
-  });
-  if (!user) {
-    res
-      .status(StatusCodes.NOT_FOUND)
-      .json({ msg: `There is no user with id: ${id}` });
-  }
-  res.status(StatusCodes.OK).json({ msg: "User deleted successfully" });
 };
 
 export const updatePassword = async (
@@ -179,7 +204,11 @@ export const updatePassword = async (
   );
 
   if (!isPasswordValid) {
-    return next(new UnAuthenticatedError("Invalid password"));
+    return next(
+      new UnAuthenticatedError(
+        "The provided currentPassword does not match user's current password"
+      )
+    );
   }
 
   const salt = await bcrypt.genSalt(10);

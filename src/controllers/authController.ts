@@ -21,6 +21,16 @@ export const register = async (
     );
   }
 
+  if (password.length < 6) {
+    return next(
+      new BadRequestError("Password should be at least 6 characters")
+    );
+  }
+
+  // if (role != "USER" || role != "ADMIN") {
+  //   return next(new BadRequestError("Role can be either USER or ADMIN"));
+  // }
+
   const userWithEmail = await db.user.findUnique({
     where: {
       email,

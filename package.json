@@ -36,6 +36,7 @@
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "pg": "^8.13.0",
-    "prisma": "^5.21.0"
+    "prisma": "^5.21.0",
+    "prisma-better-errors": "^1.0.4"
   }
 }
