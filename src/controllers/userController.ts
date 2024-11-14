@@ -225,3 +225,25 @@ export const updatePassword = async (
 
   res.status(StatusCodes.OK).json({ message: "Password updated successfully" });
 };
+
+export const getUserReservations = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  const user = res.locals.user;
+  console.log(user);
+
+  const reservations = await db.reservation.findMany({
+    where: {
+      userId: parseInt(user.id),
+    },
+    include: {
+      seats: true,
+      showtime: true,
+      _count: true,
+    },
+  });
+
+  res.status(StatusCodes.OK).json({ reservations });
+};

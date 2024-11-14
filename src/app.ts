@@ -11,6 +11,7 @@ const port = process.env.PORT || 3000;
 import router from "./routes/authRoutes";
 import userRouter from "./routes/userRoutes";
 import movieRouter from "./routes/moviesRoutes";
+import reservationRouter from "./routes/reservationRoutes";
 
 // Middlewares
 import errorHandlerMiddleWare from "./middlewares/error-handler";
@@ -37,6 +38,7 @@ app.use(express.json());
 app.use("/api/v1/auth", router);
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/movies", movieRouter);
+app.use("/api/v1/reservations", reservationRouter);
 
 //error handling
 app.use(notFound);

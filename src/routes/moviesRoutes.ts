@@ -6,6 +6,7 @@ import {
 import {
   addShowTimeToMovie,
   createMovie,
+  getAvailableSeatsForMovieShowtime,
   getMovies,
   getMoviesByGenre,
   getMoviesById,
@@ -28,6 +29,11 @@ movieRouter.post(
   authenticateUser,
   authorizePermissions("ADMIN"),
   addShowTimeToMovie
+);
+movieRouter.get(
+  "/showTime/:showTimeId/availableSeats",
+  authenticateUser,
+  getAvailableSeatsForMovieShowtime
 );
 movieRouter.get("/:movieId/showTimes", authenticateUser, getMovieShowTimes);
 movieRouter.post(

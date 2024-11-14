@@ -53,7 +53,7 @@ model ShowTime {
   startTime     String  
   endTime       String  
   movieId       Int
-  movie         Movie   @relation(fields: [movieId], references: [id])
+  movie         Movie   @relation(fields: [movieId], references: [id], onDelete: Cascade)
   seats         Seat[]
   reservations  Reservation[]
 
@@ -64,7 +64,7 @@ model Seat {
   id                  Int     @id @default(autoincrement())
   seatNumber          String
   isAvailable         Boolean @default(true)
-  showTime            ShowTime @relation(fields: [showTimeId], references: [id])
+  showTime            ShowTime @relation(fields: [showTimeId], references: [id], onDelete: Cascade)
   showTimeId          Int
   isResearved         Boolean  @default(false)
   reservation         Reservation? @relation(fields: [reservationId], references: [id])
@@ -77,9 +77,9 @@ model Reservation {
   id                  Int        @id @default(autoincrement())
   user                User       @relation(fields: [userId], references: [id])
   userId              Int
-  showtime            ShowTime   @relation(fields: [showtimeId], references: [id])
+  showtime            ShowTime   @relation(fields: [showtimeId], references: [id], onDelete: Cascade)
   showtimeId          Int
-  seatId              Int
+  // seatId              Int
   seats               Seat[]
   reservedAt          DateTime   @default(now())
   status              ReservationStatus @default(ACTIVE)

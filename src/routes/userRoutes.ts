@@ -7,6 +7,7 @@ import {
   deleteUser,
   getAllUser,
   getSingleUser,
+  getUserReservations,
   showCurrentUser,
   updatePassword,
   updateUser,
@@ -22,6 +23,7 @@ userRouter.get(
 );
 userRouter.get("/showCurrentUser", authenticateUser, showCurrentUser);
 userRouter.patch("/updatePassword", authenticateUser, updatePassword);
+userRouter.get("/reservations", authenticateUser, getUserReservations);
 userRouter.patch("/:id", authenticateUser, updateUser);
 userRouter.get("/:id", authenticateUser, getSingleUser);
 userRouter.delete(

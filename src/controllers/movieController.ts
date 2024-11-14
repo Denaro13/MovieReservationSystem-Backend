@@ -10,27 +10,85 @@ export const getMovies = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { genre } = req.query;
+  try {
+    const { genre } = req.query;
 
-  let movies;
+    let movies;
 
-  movies = await db.movie.findMany({
-    include: {
-      genre: true,
-      showTimes: true,
-      _count: true,
-    },
-    orderBy: {
-      id: "asc",
-    },
-  });
-
-  if (genre) {
     movies = await db.movie.findMany({
+      include: {
+        genre: true,
+        showTimes: true,
+        _count: true,
+      },
+      orderBy: {
+        id: "asc",
+      },
+    });
+
+    if (genre) {
+      movies = await db.movie.findMany({
+        where: {
+          genre: {
+            name: {
+              equals: genre as string,
+              mode: "insensitive",
+            },
+          },
+        },
+        orderBy: {
+          id: "asc",
+        },
+        include: {
+          showTimes: true,
+          genre: true,
+        },
+      });
+    }
+
+    res.status(StatusCodes.OK).json({ movies, message: "Successful" });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMoviesById = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { movieId } = req.params;
+
+    const movie = await db.movie.findFirst({
+      where: {
+        id: parseInt(movieId),
+      },
+      include: {
+        genre: true,
+        showTimes: true,
+      },
+    });
+
+    res.status(StatusCodes.OK).json({ movie });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getMoviesByGenre = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { genre } = req.params;
+
+    const movies = await db.movie.findMany({
       where: {
         genre: {
           name: {
-            equals: genre as string,
+            equals: genre,
             mode: "insensitive",
           },
         },
@@ -43,56 +101,10 @@ export const getMovies = async (
         genre: true,
       },
     });
+    // res.status(StatusCodes.OK).json({ movies });
+  } catch (error) {
+    next(error);
   }
-
-  res.status(StatusCodes.OK).json({ movies, message: "Successful" });
-};
-
-export const getMoviesById = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const { movieId } = req.params;
-
-  const movie = await db.movie.findFirst({
-    where: {
-      id: parseInt(movieId),
-    },
-    include: {
-      genre: true,
-      showTimes: true,
-    },
-  });
-
-  res.status(StatusCodes.OK).json({ movie });
-};
-
-export const getMoviesByGenre = async (
-  req: Request,
-  res: Response,
-  next: NextFunction
-) => {
-  const { genre } = req.params;
-
-  const movies = await db.movie.findMany({
-    where: {
-      genre: {
-        name: {
-          equals: genre,
-          mode: "insensitive",
-        },
-      },
-    },
-    orderBy: {
-      id: "asc",
-    },
-    include: {
-      showTimes: true,
-      genre: true,
-    },
-  });
-  // res.status(StatusCodes.OK).json({ movies });
 };
 
 export const createMovie = async (
@@ -100,50 +112,54 @@ export const createMovie = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { title, description, genre } = req.body;
+  try {
+    const { title, description, genre } = req.body;
 
-  if (!title || !description || !genre) {
-    return next(
-      new BadRequestError("Please include title, description and genre")
-    );
-  }
+    if (!title || !description || !genre) {
+      return next(
+        new BadRequestError("Please include title, description and genre")
+      );
+    }
 
-  const isGenreAvailable = await db.genre.findFirst({
-    where: {
-      name: genre,
-    },
-  });
-
-  let validId = isGenreAvailable?.id;
-
-  if (!isGenreAvailable) {
-    const createdGenre = await db.genre.create({
-      data: {
+    const isGenreAvailable = await db.genre.findFirst({
+      where: {
         name: genre,
       },
     });
-    validId = createdGenre.id;
-  }
 
-  const movie = await db.movie.create({
-    data: {
-      title,
-      description,
-      genreId: validId as number,
-      showTimes: {
-        create: [],
+    let validId = isGenreAvailable?.id;
+
+    if (!isGenreAvailable) {
+      const createdGenre = await db.genre.create({
+        data: {
+          name: genre,
+        },
+      });
+      validId = createdGenre.id;
+    }
+
+    const movie = await db.movie.create({
+      data: {
+        title,
+        description,
+        genreId: validId as number,
+        showTimes: {
+          create: [],
+        },
       },
-    },
-    include: {
-      genre: true,
-      showTimes: true,
-      _count: true,
-    },
-  });
+      include: {
+        genre: true,
+        showTimes: true,
+        _count: true,
+      },
+    });
 
-  res
-    .status(StatusCodes.CREATED)
-    .json({ movie, message: "Movie created successfully" });
+    res
+      .status(StatusCodes.CREATED)
+      .json({ movie, message: "Movie created successfully" });
+  } catch (error) {
+    next(error);
+  }
 };
 
 export const addShowTimeToMovie = async (
@@ -151,79 +167,93 @@ export const addShowTimeToMovie = async (
   res: Response,
   next: NextFunction
 ) => {
-  const { movieId } = req.params;
-  const { date, startTime } = req.body;
+  try {
+    const { movieId } = req.params;
+    const { date, startTime } = req.body;
 
-  if (!date || !startTime) {
-    return next(new BadRequestError("Please include date and startTime"));
-  }
+    if (!date || !startTime) {
+      return next(new BadRequestError("Please include date and startTime"));
+    }
 
-  const movie = await db.movie.findFirst({
-    where: {
-      id: parseInt(movieId),
-    },
-  });
-
-  if (!movie) {
-    return next(new BadRequestError(`There is no movie with id: ${movieId}`));
-  }
-
-  const endTime = calculateEndTime(startTime, 90);
-
-  const createdShowTime = await db.showTime.create({
-    data: {
-      date: date,
-      startTime: startTime,
-      endTime: endTime,
-      movie: {
-        connect: { id: movie.id },
+    const movie = await db.movie.findFirst({
+      where: {
+        id: parseInt(movieId),
       },
-    },
-    include: {
-      movie: {
-        select: {
-          title: true,
-          description: true,
-          movieLength: true,
-          genre: {
-            select: {
-              name: true,
+    });
+
+    if (!movie) {
+      return next(new BadRequestError(`There is no movie with id: ${movieId}`));
+    }
+
+    const endTime = calculateEndTime(startTime, 90);
+
+    const createdShowTime = await db.showTime.create({
+      data: {
+        date: date,
+        startTime: startTime,
+        endTime: endTime,
+        movie: {
+          connect: { id: movie.id },
+        },
+        seats: {
+          create: Array.from({ length: 50 }, (_, i) => ({
+            seatNumber: `A${i + 1}`, // Generate seats from A1 to A100
+          })),
+        },
+      },
+      include: {
+        movie: {
+          select: {
+            title: true,
+            description: true,
+            movieLength: true,
+            genre: {
+              select: {
+                name: true,
+              },
             },
           },
         },
+        seats: true,
       },
-      seats: true,
-    },
-  });
+    });
 
-  res
-    .status(StatusCodes.OK)
-    .json({ message: "Show time added successfully", createdShowTime });
+    res
+      .status(StatusCodes.OK)
+      .json({ message: "Show time added successfully", createdShowTime });
+  } catch (error) {
+    next(error);
+  }
 };
+
 export const getMovieShowTimes = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const { movieId } = req.params;
+  try {
+    const { movieId } = req.params;
 
-  const validId = await db.movie.findFirst({
-    where: {
-      id: parseInt(movieId),
-    },
-  });
+    const validId = await db.movie.findFirst({
+      where: {
+        id: parseInt(movieId),
+      },
+    });
 
-  if (!validId) {
-    return next(new BadRequestError(`There is no movie with id:${movieId}`));
+    if (!validId) {
+      return next(new BadRequestError(`There is no movie with id:${movieId}`));
+    }
+
+    const showTimes = await db.showTime.findMany({
+      where: {
+        movieId: parseInt(movieId),
+      },
+    });
+
+    res.status(StatusCodes.OK).json({ message: "Successful", showTimes });
+  } catch (error) {
+    next(error);
   }
-
-  const showTimes = await db.showTime.findMany({
-    where: {
-      movieId: parseInt(movieId),
-    },
-  });
-
-  res.status(StatusCodes.OK).json({ message: "Successful", showTimes });
 };
 
 export const seatReservationForMovieShowtime = async (
@@ -233,6 +263,38 @@ export const seatReservationForMovieShowtime = async (
 ) => {
   const user = res.locals.user;
   console.log(user);
+};
+export const getAvailableSeatsForMovieShowtime = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { showTimeId } = req.params;
+
+    const validShowTimeId = await db.showTime.findFirst({
+      where: {
+        id: parseInt(showTimeId),
+      },
+    });
+
+    if (!validShowTimeId) {
+      return next(
+        new BadRequestError(`There is no show time with id:${showTimeId}`)
+      );
+    }
+
+    const availableSeats = await db.seat.findMany({
+      where: {
+        showTimeId: parseInt(showTimeId),
+        isAvailable: true,
+      },
+    });
+
+    res.status(StatusCodes.OK).json({ availableSeats });
+  } catch (error) {
+    next(error);
+  }
 };
 
 // if (!Array.isArray(showTimes)) {
